@@ -198,8 +198,13 @@
     const anchor = findAnchor(lobby)
     if (!anchor || !anchor.parent) return false
     ensureStyles()
+    // Force positioning context on the parent so our absolute checkbox
+    // anchors to the banner card and not the viewport. Inline style wins
+    // against any League-internal CSS specificity.
+    anchor.parent.style.position = 'relative'
     anchor.parent.insertBefore(buildCheckbox(), anchor.before)
-    console.log(LOG, 'checkbox injected into lobby banner')
+    const rect = anchor.parent.getBoundingClientRect()
+    console.log(LOG, 'checkbox injected; parent rect:', Math.round(rect.left), Math.round(rect.top), Math.round(rect.width) + 'x' + Math.round(rect.height))
     return true
   }
 
