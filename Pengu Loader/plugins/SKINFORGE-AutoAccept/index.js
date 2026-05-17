@@ -169,12 +169,18 @@
   }
 
   function findAnchor(lobby) {
-    // Primary: the player banner card (icon + name + rank — the "profile area")
-    const banner = lobby.querySelector('.v2-banner-component')
-    if (banner && banner.parentElement) {
-      return { parent: banner.parentElement, before: banner }
+    // Primary: as first child of the local player's banner card
+    // (the dark gold card holding icon/name/rank — checkbox sits above the icon)
+    const card = lobby.querySelector('.lobby-banner.local')
+    if (card) {
+      return { parent: card, before: card.firstChild }
     }
-    // Fallback: as first child of the parties view
+    // Fallback 1: as first child of the v2-banner wrapper
+    const banner = lobby.querySelector('.v2-banner-component')
+    if (banner) {
+      return { parent: banner, before: banner.firstChild }
+    }
+    // Fallback 2: as first child of the parties view
     const view = lobby.querySelector('.parties-view')
     if (view) {
       return { parent: view, before: view.firstChild }
@@ -190,7 +196,7 @@
     if (!anchor || !anchor.parent) return false
     ensureStyles()
     anchor.parent.insertBefore(buildCheckbox(), anchor.before)
-    console.log(LOG, 'checkbox injected above .v2-banner-component')
+    console.log(LOG, 'checkbox injected into lobby banner')
     return true
   }
 
