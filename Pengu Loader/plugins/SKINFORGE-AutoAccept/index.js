@@ -6,12 +6,13 @@
   const POLL_MS = 1000
   const ACCEPT_DELAY_MS = 2000
   const WRAP_ID = 'sf-auto-accept-wrap'
+  const LOBBY_SCREEN = 'rcp-fe-lol-parties'
 
   // ── State ──────────────────────────────────────────────────────────────────
   let enabled = false
-  let currentPhase = null
   let pollInterval = null
   let acceptTimeout = null
+  let lobbyObserver = null
 
   // ── Persistence ────────────────────────────────────────────────────────────
   async function loadSetting() {
@@ -36,8 +37,7 @@
     try {
       const res = await fetch('/lol-gameflow/v1/gameflow-phase')
       if (!res.ok) return null
-      const text = await res.text()
-      return text.replace(/"/g, '').trim()
+      return (await res.text()).replace(/"/g, '').trim()
     } catch (_) {
       return null
     }
@@ -46,26 +46,19 @@
   // ── Auto-accept (mirrors Bocchi's GameflowMonitor.handleReadyCheck) ────────
   function startPoll() {
     if (pollInterval) return
-    pollInterval = setInterval(tick, POLL_MS)
+    pollInterval = setInterval(checkReadyCheck, POLL_MS)
   }
 
-  async function tick() {
-    const phase = await getGameflowPhase()
-    if (phase !== currentPhase) {
-      currentPhase = phase
-      updateOverlayVisibility()
-    }
-
+  async function checkReadyCheck() {
     if (!enabled) return
+    const phase = await getGameflowPhase()
     if (phase !== 'ReadyCheck') return
-    if (acceptTimeout) return  // already scheduled
+    if (acceptTimeout) return
 
     acceptTimeout = setTimeout(async () => {
       acceptTimeout = null
-
       if (!enabled) return
 
-      // Re-verify phase before accepting (matches Bocchi exactly)
       const verifyPhase = await getGameflowPhase()
       if (verifyPhase !== 'ReadyCheck') {
         console.log(LOG, 'phase changed during delay — skipping accept')
@@ -81,40 +74,43 @@
     }, ACCEPT_DELAY_MS)
   }
 
-  // ── Overlay (visible only during Lobby phase) ──────────────────────────────
+  // ── Styles ─────────────────────────────────────────────────────────────────
   function ensureStyles() {
     if (document.getElementById('sf-aa-styles')) return
     const style = document.createElement('style')
     style.id = 'sf-aa-styles'
     style.textContent = `
       #${WRAP_ID} {
-        position: fixed;
-        top: 80px;
-        left: 50%;
-        transform: translateX(-50%);
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 10px;
-        padding: 8px 16px;
-        background: rgba(1, 10, 19, 0.92);
-        border: 1px solid #785a28;
-        border-radius: 3px;
+        margin: 0 auto 12px;
+        padding: 6px 16px;
+        width: fit-content;
+        background: rgba(1, 10, 19, 0.78);
+        border: 1px solid #463714;
+        border-radius: 2px;
         cursor: pointer;
         user-select: none;
-        z-index: 2147483646;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
-        transition: opacity 120ms ease, transform 120ms ease;
+        position: relative;
+        z-index: 50;
+        transition: background-color 120ms ease, border-color 120ms ease;
       }
       #${WRAP_ID}:hover {
-        background: rgba(40, 30, 12, 0.95);
+        background: rgba(40, 30, 12, 0.9);
+        border-color: #785a28;
       }
       #${WRAP_ID} .sf-box {
-        width: 16px;
-        height: 16px;
-        border: 1px solid #c8aa6e;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #785a28;
         background: #010a13;
         position: relative;
         flex-shrink: 0;
+      }
+      #${WRAP_ID}.on .sf-box {
+        border-color: #c8aa6e;
       }
       #${WRAP_ID}.on .sf-box::after {
         content: '';
@@ -124,11 +120,11 @@
       }
       #${WRAP_ID} .sf-label {
         font-family: "Beaufort for LOL", "LoL Display", serif;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.14em;
+        letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: #cdbe91;
+        color: #a09b8c;
       }
       #${WRAP_ID}.on .sf-label {
         color: #f0e6d2;
@@ -137,7 +133,7 @@
     document.head.appendChild(style)
   }
 
-  function buildOverlay() {
+  function buildCheckbox() {
     const wrap = document.createElement('div')
     wrap.id = WRAP_ID
     if (enabled) wrap.classList.add('on')
@@ -152,7 +148,8 @@
     wrap.appendChild(box)
     wrap.appendChild(label)
 
-    wrap.addEventListener('click', () => {
+    wrap.addEventListener('click', (ev) => {
+      ev.stopPropagation()
       enabled = !enabled
       wrap.classList.toggle('on', enabled)
       saveSetting(enabled)
@@ -166,25 +163,59 @@
     return wrap
   }
 
-  function updateOverlayVisibility() {
-    const existing = document.getElementById(WRAP_ID)
-    const shouldShow = currentPhase === 'Lobby'
+  // ── Lobby DOM injection ────────────────────────────────────────────────────
+  function findLobbyRoot() {
+    return document.querySelector(`.screen-root[data-screen-name="${LOBBY_SCREEN}"]`)
+  }
 
-    if (shouldShow && !existing) {
-      ensureStyles()
-      document.body.appendChild(buildOverlay())
-      console.log(LOG, 'overlay shown (phase=Lobby)')
-    } else if (!shouldShow && existing) {
-      existing.remove()
-      console.log(LOG, 'overlay hidden (phase=' + currentPhase + ')')
+  function findAnchor(lobby) {
+    // Primary: the player banner card (icon + name + rank — the "profile area")
+    const banner = lobby.querySelector('.v2-banner-component')
+    if (banner && banner.parentElement) {
+      return { parent: banner.parentElement, before: banner }
     }
+    // Fallback: as first child of the parties view
+    const view = lobby.querySelector('.parties-view')
+    if (view) {
+      return { parent: view, before: view.firstChild }
+    }
+    return null
+  }
+
+  function tryInject() {
+    if (document.getElementById(WRAP_ID)) return true
+    const lobby = findLobbyRoot()
+    if (!lobby) return false
+    const anchor = findAnchor(lobby)
+    if (!anchor || !anchor.parent) return false
+    ensureStyles()
+    anchor.parent.insertBefore(buildCheckbox(), anchor.before)
+    console.log(LOG, 'checkbox injected above .v2-banner-component')
+    return true
+  }
+
+  function startLobbyObserver() {
+    if (lobbyObserver) return
+    lobbyObserver = new MutationObserver(() => {
+      const lobby = findLobbyRoot()
+      if (lobby) {
+        tryInject()
+      } else {
+        // Lobby unmounted — Ember already removed our element, nothing to clean up
+      }
+    })
+    lobbyObserver.observe(document.body, { childList: true, subtree: true })
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
     enabled = await loadSetting()
     console.log(LOG, `init — auto-accept ${enabled ? 'ON' : 'OFF'}`)
+
     startPoll()
+    startLobbyObserver()
+    // Safety net: try injection every 3 s in case the observer misses a frame
+    setInterval(tryInject, 3000)
   }
 
   if (document.readyState === 'loading') {
