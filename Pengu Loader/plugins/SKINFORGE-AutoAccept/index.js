@@ -74,60 +74,56 @@
     }, ACCEPT_DELAY_MS)
   }
 
-  // ── Styles ─────────────────────────────────────────────────────────────────
+  // ── Toggle UI (styled like .open-party-toggle, placed beside it) ───────────
   function ensureStyles() {
     if (document.getElementById('sf-aa-styles')) return
     const style = document.createElement('style')
     style.id = 'sf-aa-styles'
     style.textContent = `
-      .lobby-banner.local { position: relative !important; }
       #${WRAP_ID} {
-        position: absolute;
-        top: 16px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 4px 12px;
-        white-space: nowrap;
-        background: rgba(1, 10, 19, 0.85);
+        gap: 6px;
+        height: 28px;
+        padding: 0 12px;
+        margin-right: 6px;
+        background: linear-gradient(to bottom, #1e2328 0%, #0a0e13 100%);
         border: 1px solid #463714;
         border-radius: 2px;
         cursor: pointer;
         user-select: none;
-        z-index: 100;
-        transition: background-color 120ms ease, border-color 120ms ease;
+        vertical-align: middle;
+        transition: border-color 120ms ease, background 120ms ease;
       }
       #${WRAP_ID}:hover {
-        background: rgba(40, 30, 12, 0.9);
         border-color: #785a28;
+        background: linear-gradient(to bottom, #2a2f35 0%, #14191f 100%);
       }
-      #${WRAP_ID} .sf-box {
-        width: 14px;
-        height: 14px;
-        border: 1px solid #785a28;
-        background: #010a13;
-        position: relative;
-        flex-shrink: 0;
-      }
-      #${WRAP_ID}.on .sf-box {
+      #${WRAP_ID}.on {
         border-color: #c8aa6e;
+        background: linear-gradient(to bottom, #1e2328 0%, #0a0e13 100%);
+        box-shadow: 0 0 6px rgba(200, 170, 110, 0.35) inset;
       }
-      #${WRAP_ID}.on .sf-box::after {
-        content: '';
-        position: absolute;
-        inset: 2px;
-        background: #c8aa6e;
+      #${WRAP_ID} .sf-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #5b5a56;
+        flex-shrink: 0;
+        transition: background-color 120ms ease, box-shadow 120ms ease;
+      }
+      #${WRAP_ID}.on .sf-dot {
+        background: #1eff8a;
+        box-shadow: 0 0 6px rgba(30, 255, 138, 0.7);
       }
       #${WRAP_ID} .sf-label {
         font-family: "Beaufort for LOL", "LoL Display", serif;
         font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: #a09b8c;
+        line-height: 1;
       }
       #${WRAP_ID}.on .sf-label {
         color: #f0e6d2;
@@ -136,19 +132,20 @@
     document.head.appendChild(style)
   }
 
-  function buildCheckbox() {
+  function buildToggle() {
     const wrap = document.createElement('div')
     wrap.id = WRAP_ID
+    wrap.title = 'Auto-accept ready check'
     if (enabled) wrap.classList.add('on')
 
-    const box = document.createElement('div')
-    box.className = 'sf-box'
+    const dot = document.createElement('span')
+    dot.className = 'sf-dot'
 
     const label = document.createElement('span')
     label.className = 'sf-label'
     label.textContent = 'Auto Accept'
 
-    wrap.appendChild(box)
+    wrap.appendChild(dot)
     wrap.appendChild(label)
 
     wrap.addEventListener('click', (ev) => {
@@ -171,52 +168,28 @@
     return document.querySelector(`.screen-root[data-screen-name="${LOBBY_SCREEN}"]`)
   }
 
-  function findAnchor(lobby) {
-    // Primary: as first child of the local player's banner card
-    // (the dark gold card holding icon/name/rank — checkbox sits above the icon)
-    const card = lobby.querySelector('.lobby-banner.local')
-    if (card) {
-      return { parent: card, before: card.firstChild }
-    }
-    // Fallback 1: as first child of the v2-banner wrapper
-    const banner = lobby.querySelector('.v2-banner-component')
-    if (banner) {
-      return { parent: banner, before: banner.firstChild }
-    }
-    // Fallback 2: as first child of the parties view
-    const view = lobby.querySelector('.parties-view')
-    if (view) {
-      return { parent: view, before: view.firstChild }
-    }
-    return null
+  function findHeaderRow(lobby) {
+    return lobby.querySelector('.lobby-header-buttons-container')
   }
 
   function tryInject() {
     if (document.getElementById(WRAP_ID)) return true
     const lobby = findLobbyRoot()
     if (!lobby) return false
-    const anchor = findAnchor(lobby)
-    if (!anchor || !anchor.parent) return false
+    const row = findHeaderRow(lobby)
+    if (!row) return false
     ensureStyles()
-    // Force positioning context on the parent so our absolute checkbox
-    // anchors to the banner card and not the viewport. Inline style wins
-    // against any League-internal CSS specificity.
-    anchor.parent.style.position = 'relative'
-    anchor.parent.insertBefore(buildCheckbox(), anchor.before)
-    const rect = anchor.parent.getBoundingClientRect()
-    console.log(LOG, 'checkbox injected; parent rect:', Math.round(rect.left), Math.round(rect.top), Math.round(rect.width) + 'x' + Math.round(rect.height))
+    // Insert as the first child so the auto-accept toggle reads left-to-right
+    // before the existing icons (bar chart, open party).
+    row.insertBefore(buildToggle(), row.firstChild)
+    console.log(LOG, 'toggle injected into .lobby-header-buttons-container')
     return true
   }
 
   function startLobbyObserver() {
     if (lobbyObserver) return
     lobbyObserver = new MutationObserver(() => {
-      const lobby = findLobbyRoot()
-      if (lobby) {
-        tryInject()
-      } else {
-        // Lobby unmounted — Ember already removed our element, nothing to clean up
-      }
+      if (findLobbyRoot()) tryInject()
     })
     lobbyObserver.observe(document.body, { childList: true, subtree: true })
   }
@@ -228,7 +201,6 @@
 
     startPoll()
     startLobbyObserver()
-    // Safety net: try injection every 3 s in case the observer misses a frame
     setInterval(tryInject, 3000)
   }
 
