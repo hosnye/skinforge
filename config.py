@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 # =============================================================================
 
 APP_NAME = "Skinforge"                         # Application display name
-APP_VERSION = "1.2.7"                          # Application version
+APP_VERSION = "1.2.8"                          # Application version
 APP_USER_AGENT = f"{APP_NAME}/{APP_VERSION}"  # User-Agent header for HTTP requests
 
 _CONFIG = configparser.ConfigParser()

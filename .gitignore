@@ -112,8 +112,9 @@ Rose_PunchTest*.spec
 Rose_PartyTest.spec
 relay_server.py
 
-# Relay config (contains Worker URL — keep secret)
-party/network/relay_config.py
+# Relay config: now tracked. The Worker URL is public (anyone hitting it just
+# joins the room hash); not a secret. Fork-and-self-host instructions live
+# inside the file's docstring.
 
 # Skin encryption (developer-only, contains secrets & protocol logic)
 tools/
