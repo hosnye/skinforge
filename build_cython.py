@@ -115,26 +115,35 @@ setup(
 
 
 def restore_sources():
-    """Restore original .py files from backups (for development)"""
+    """Restore original .py files from backups (for development).
+
+    Only deletes .pyd / .c artifacts WE produced this build (i.e. modules where
+    a .py.bak backup exists, proving we did the compile-and-rename dance).
+    User-supplied .pyd files (no matching .py source — e.g. secret modules
+    shipped pre-compiled) are left untouched; otherwise the next build would
+    fail at Rose.spec's missing-crypto check.
+    """
     print("\n[Cython] Restoring original source files...")
     restored = 0
     for mod_path in CYTHON_MODULES:
         backup = Path(mod_path).with_suffix(".py.bak")
         original = Path(mod_path)
-        if backup.exists():
+        we_compiled_this = backup.exists()
+
+        if we_compiled_this:
             if original.exists():
                 original.unlink()
             backup.rename(original)
             print(f"[OK] Restored: {original}")
             restored += 1
 
-        # Also clean up .pyd and .c files
-        p = Path(mod_path)
-        for pyd in p.parent.glob(f"{p.stem}*.pyd"):
-            pyd.unlink()
-        c_file = p.with_suffix(".c")
-        if c_file.exists():
-            c_file.unlink()
+            # Only clean up artifacts when we compiled — preserves pre-built .pyd
+            p = Path(mod_path)
+            for pyd in p.parent.glob(f"{p.stem}*.pyd"):
+                pyd.unlink()
+            c_file = p.with_suffix(".c")
+            if c_file.exists():
+                c_file.unlink()
 
     print(f"[OK] Restored {restored} source files")
 

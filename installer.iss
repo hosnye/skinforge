@@ -2,8 +2,8 @@
 ; This creates a proper Windows installer that registers the app
 
 #define MyAppName "Skinforge"
-#define MyAppVersion "1.2.7"
-#define MyAppVersionInfo "1.2.7.0"
+#define MyAppVersion "1.2.8"
+#define MyAppVersionInfo "1.2.8.0"
 #define MyAppPublisher "Skinforge"
 #define MyAppURL "https://github.com/hosnye"
 #define MyAppExeName "Skinforge.exe"

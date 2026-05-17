@@ -92,17 +92,46 @@ if Path('utils/crypto/skin_config.py').exists():
 else:
     print("[WARNING] utils/crypto/skin_config.py not found - skin decryption will not work")
 
-for _crypto_mod in ['client_secrets', 'integrity']:
+# CRITICAL: key_provider must be bundled or .rse skin decryption silently fails at
+# runtime (mod_manager.py imports get_skin_key from it before every injection).
+# These modules are gitignored secrets — their .pyd (or .py fallback) MUST be in
+# utils/crypto/ before building, or we refuse to build.
+_missing_crypto = []
+for _crypto_mod in ['key_provider', 'client_secrets', 'integrity']:
     _py = Path(f'utils/crypto/{_crypto_mod}.py')
     _pyd = list(Path('utils/crypto').glob(f'{_crypto_mod}*.pyd'))
     if _pyd:
-        datas += [(_pyd[0], 'utils/crypto')]
+        datas += [(str(_pyd[0]), 'utils/crypto')]
         print(f"[OK] Crypto module bundled (compiled): {_pyd[0].name}")
     elif _py.exists():
         datas += [(str(_py), 'utils/crypto')]
         print(f"[OK] Crypto module bundled: {_crypto_mod}.py")
     else:
-        print(f"[WARNING] utils/crypto/{_crypto_mod} not found - skin decryption will not work")
+        _missing_crypto.append(_crypto_mod)
+        print(f"[ERROR] utils/crypto/{_crypto_mod} not found - skin decryption WILL fail at runtime")
+
+if _missing_crypto:
+    raise SystemExit(
+        f"[FATAL] Refusing to build: missing crypto modules in utils/crypto/: "
+        f"{', '.join(_missing_crypto)}. Drop the .pyd or .py files in place and re-run."
+    )
+
+# Party module — force-bundle as loose .py files so a missing PYZ entry can't
+# silently strip party mode from the installer (this happened on v1.2.7: the
+# install shipped zero party files even though hiddenimports listed them).
+# All party.* imports are inside function bodies (lazy), so PyInstaller's
+# static analysis is fragile; bundling the source tree is the safest fix.
+party_dir = Path('party')
+if party_dir.exists() and party_dir.is_dir():
+    party_count = 0
+    for src in party_dir.rglob('*.py'):
+        rel = src.relative_to(party_dir)
+        dest_dir = (Path('party') / rel).parent
+        datas += [(str(src), str(dest_dir))]
+        party_count += 1
+    print(f"[OK] Party module bundled ({party_count} .py files)")
+else:
+    raise SystemExit("[FATAL] Refusing to build: party/ directory missing — party mode would silently break.")
 
 # Collect Pillow data files (fonts, etc.) to prevent version mismatch issues
 try:
@@ -315,13 +344,16 @@ hiddenimports = [
     'websocket_client',
     'websockets',
 
-    # Party mode (WebSocket relay)
+    # Party mode (WebSocket relay) — also force-bundled as loose files above
     'party',
     'party.core',
     'party.core.party_manager',
     'party.core.party_state',
     'party.network',
     'party.network.peer_connection',
+    'party.network.relay_config',
+    'party.network.stun_client',
+    'party.network.udp_transport',
     'party.network.ws_relay',
     'party.protocol',
     'party.protocol.crypto',
@@ -330,6 +362,9 @@ hiddenimports = [
     'party.discovery',
     'party.discovery.lobby_matcher',
     'party.discovery.skin_collector',
+    'party.integration',
+    'party.integration.injection_hook',
+    'party.integration.ui_bridge',
     
     # System tray
     'pystray',
