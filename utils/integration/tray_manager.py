@@ -209,9 +209,9 @@ class TrayManager:
             menu = self._create_menu()
             
             self.icon = pystray.Icon(
-                "Rose",
+                "Skinforge",
                 icon_image,
-                "Rose",
+                "Skinforge",
                 menu,
                 default_action=self._on_icon_click
             )

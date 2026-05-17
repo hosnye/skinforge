@@ -69,8 +69,8 @@ def create_installer():
     print(f"Found Inno Setup: {iscc_path}")
     
     # Check if dist directory exists
-    if not Path("dist/Rose").exists():
-        print("\nError: dist/Rose directory not found!")
+    if not Path("dist/Skinforge").exists():
+        print("\nError: dist/Skinforge directory not found!")
         print("Please run 'python build_pyinstaller.py' first to create the executable.")
         return False
     
@@ -113,7 +113,7 @@ def create_installer():
         return False
     
     # Copy icon file to dist directory if it doesn't exist
-    icon_dst = Path("dist/Rose/icon.ico")
+    icon_dst = Path("dist/Skinforge/icon.ico")
     if ico_icon.exists() and not icon_dst.exists():
         shutil.copy2(ico_icon, icon_dst)
         print(f"Copied {ico_icon} to {icon_dst}")
@@ -135,7 +135,7 @@ def create_installer():
     print("\n[3/3] Installer created successfully!")
     
     # Check if installer was created
-    installer_files = list(installer_dir.glob("Rose_Setup*.exe"))
+    installer_files = list(installer_dir.glob("Skinforge_Setup*.exe"))
     if installer_files:
         installer_file = installer_files[0]
         size_mb = installer_file.stat().st_size / (1024 * 1024)

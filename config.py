@@ -20,8 +20,9 @@ log = logging.getLogger(__name__)
 # APPLICATION METADATA
 # =============================================================================
 
+APP_NAME = "Skinforge"                         # Application display name
 APP_VERSION = "1.2.7"                          # Application version
-APP_USER_AGENT = f"Rose/{APP_VERSION}"  # User-Agent header for HTTP requests
+APP_USER_AGENT = f"{APP_NAME}/{APP_VERSION}"  # User-Agent header for HTTP requests
 
 _CONFIG = configparser.ConfigParser()
 _CONFIG_MTIME: float = 0.0  # Last known modification time of config.ini
@@ -297,7 +298,7 @@ LOCK_FILE_NAME = "rose.lock"
 _IS_DEV_BUILD = bool(getattr(sys, "frozen", False)) and (
     "rosedev" in Path(sys.executable).stem.lower() or "rose-dev" in Path(sys.executable).stem.lower()
 )
-SINGLE_INSTANCE_MUTEX_NAME = r"Local\RoseDevSingleInstance" if _IS_DEV_BUILD else r"Local\RoseSingleInstance"
+SINGLE_INSTANCE_MUTEX_NAME = r"Local\SkinforgeDevSingleInstance" if _IS_DEV_BUILD else r"Local\SkinforgeSingleInstance"
 
 # Log file patterns (handles .log files)
 LOG_FILE_PATTERN = "rose_*.log*"

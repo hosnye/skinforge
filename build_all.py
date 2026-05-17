@@ -78,7 +78,7 @@ def run_build_exe():
         return False
     
     # Verify the executable was created
-    exe_path = Path("dist/Rose/Rose.exe")
+    exe_path = Path("dist/Skinforge/Skinforge.exe")
     if not exe_path.exists():
         print("\n[ERROR] Executable not found at expected location!")
         return False
@@ -104,7 +104,7 @@ def run_create_installer():
     
     # Verify the installer was created
     installer_dir = Path("installer")
-    installer_files = list(installer_dir.glob("Rose_Setup*.exe"))
+    installer_files = list(installer_dir.glob("Skinforge_Setup*.exe"))
     if not installer_files:
         print("\n[ERROR] Installer not found at expected location!")
         return False
@@ -157,7 +157,7 @@ def build_all():
         print("\nTroubleshooting:")
         print("1. Make sure all dependencies are installed:")
         print("   pip install -r requirements.txt")
-        print("2. Close any running instances of Rose.exe")
+        print("2. Close any running instances of Skinforge.exe")
         print("3. Make sure PyInstaller is installed:")
         print("   pip install pyinstaller")
         return False
@@ -170,7 +170,7 @@ def build_all():
         print_header("[WARNING] BUILD PARTIALLY COMPLETED (3/4)")
         print("Executable was built successfully, but installer creation failed.")
         print("\nYou can still use the executable directly from:")
-        print("  dist/Rose/Rose.exe")
+        print("  dist/Skinforge/Skinforge.exe")
         print("\nTo create the installer:")
         print("1. Install Inno Setup from: https://jrsoftware.org/isdl.php")
         print("2. Run: python create_installer.py")
@@ -184,8 +184,8 @@ def build_all():
     print_header("[SUCCESS] BUILD COMPLETED SUCCESSFULLY!")
     
     # Get file information
-    exe_path = Path("dist/Rose/Rose.exe")
-    installer_files = list(Path("installer").glob("Rose_Setup*.exe"))
+    exe_path = Path("dist/Skinforge/Skinforge.exe")
+    installer_files = list(Path("installer").glob("Skinforge_Setup*.exe"))
     installer_path = installer_files[0] if installer_files else None
     
     exe_size_mb = exe_path.stat().st_size / (1024 * 1024)
@@ -204,13 +204,13 @@ def build_all():
     
     print("\nNext Steps:")
     print("  • For development/testing:")
-    print("    Run: dist\\Rose\\Rose.exe")
+    print("    Run: dist\\Skinforge\\Skinforge.exe")
     print()
     print("  • For distribution:")
-    print(f"    Share: {installer_path if installer_path else 'installer/Rose_Setup.exe'}")
+    print(f"    Share: {installer_path if installer_path else 'installer/Skinforge_Setup.exe'}")
     print()
     print("  • For portable version:")
-    print("    Zip: dist\\Rose\\ folder")
+    print("    Zip: dist\\Skinforge\\ folder")
     
     print("\n" + "=" * 70)
     

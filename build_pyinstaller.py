@@ -65,9 +65,13 @@ def build_with_pyinstaller():
     """Build executable using PyInstaller with multi-threading"""
     print_step(2, 3, "Building with PyInstaller (Multi-threaded)")
     
-    # Use spec file which has all the configuration
+    # Use spec file which has all the configuration.
+    # Invoke via `python -m PyInstaller` so the venv's PyInstaller is used
+    # regardless of whether its Scripts dir is on PATH.
     cmd = [
-        "pyinstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--clean",
         "--noconfirm",
         "Rose.spec",
@@ -88,7 +92,7 @@ def organize_output():
     """Organize output files and verify"""
     print_step(3, 3, "Organizing Output & Verification")
     
-    dist_folder = Path("dist/Rose")
+    dist_folder = Path("dist/Skinforge")
     
     if not dist_folder.exists():
         print("[ERROR] Build output not found!")
@@ -120,7 +124,7 @@ def main():
     
     print_header("[OK] BUILD COMPLETED SUCCESSFULLY!")
     
-    exe_path = Path("dist/Rose/Rose.exe")
+    exe_path = Path("dist/Skinforge/Skinforge.exe")
     
     if exe_path.exists():
         size_mb = exe_path.stat().st_size / (1024 * 1024)
@@ -139,8 +143,8 @@ def main():
         print(f"  - Good enough against casual theft")
         
         print(f"\nTo test:")
-        print(f"  cd dist\\Rose")
-        print(f"  Rose.exe")
+        print(f"  cd dist\\Skinforge")
+        print(f"  Skinforge.exe")
     else:
         print("[ERROR] Executable not found!")
         sys.exit(1)

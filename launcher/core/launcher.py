@@ -142,6 +142,10 @@ def run_launcher(dev_mode: bool = False, test_download_fail: bool = False) -> No
 
         def worker():
             try:
+                # App auto-update points at github.com/hosnye/skinforge
+                # (configured in launcher/update/github_client.py). Skin data
+                # updates use a separate channel (Alban1911/RoseSkin) via the
+                # SkinSyncSequence below, so upstream skins keep flowing.
                 _perform_update(dialog, dev_mode=dev_mode)
 
                 hash_sequence = HashCheckSequence()

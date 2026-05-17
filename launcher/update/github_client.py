@@ -9,7 +9,7 @@ from typing import Optional
 
 import requests
 
-GITHUB_RELEASE_API = "https://api.github.com/repos/Alban1911/Rose/releases/latest"
+GITHUB_RELEASE_API = "https://api.github.com/repos/hosnye/skinforge/releases/latest"
 
 
 class GitHubClient:

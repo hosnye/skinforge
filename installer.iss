@@ -1,20 +1,20 @@
-; Rose Installer Script for Inno Setup
+; Skinforge Installer Script for Inno Setup
 ; This creates a proper Windows installer that registers the app
 
-#define MyAppName "Rose"
+#define MyAppName "Skinforge"
 #define MyAppVersion "1.2.7"
 #define MyAppVersionInfo "1.2.7.0"
-#define MyAppPublisher "Rose Team"
-#define MyAppURL "https://github.com/Alban1911/Rose"
-#define MyAppExeName "Rose.exe"
+#define MyAppPublisher "Skinforge"
+#define MyAppURL "https://github.com/hosnye"
+#define MyAppExeName "Skinforge.exe"
 #define MyAppDescription "Effortless skin changer for League of Legends"
 ; Must match config.SINGLE_INSTANCE_MUTEX_NAME (used by the app to enforce single-instance)
-#define MyAppMutex "Local\RoseSingleInstance"
+#define MyAppMutex "Local\SkinforgeSingleInstance"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
-; Do not use the same AppId value in installers for other applications.
-AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}}
+; Distinct from upstream Rose so Skinforge installs as a separate Windows app.
+AppId={{B7E5F1A4-3D2C-4E8B-9A1F-5C6D0E2F3A1B}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
@@ -26,7 +26,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=installer
-OutputBaseFilename=Rose_Setup
+OutputBaseFilename=Skinforge_Setup
 SetupIconFile=assets\icon.ico
 Compression=lzma
 SolidCompression=yes
@@ -40,7 +40,7 @@ VersionInfoVersion={#MyAppVersionInfo}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppDescription}
 VersionInfoProductName={#MyAppName}
-; Prevent install/uninstall while Rose is running (mutex is created by the running app)
+; Prevent install/uninstall while Skinforge is running (mutex is created by the running app)
 AppMutex={#MyAppMutex}
 
 [Languages]
@@ -52,7 +52,7 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Files]
 ; Main application files
-Source: "dist\Rose\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\Skinforge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -66,17 +66,17 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 
 [UninstallRun]
 ; Uninstall Pengu Loader (removes d3d9.dll hook from the League directory)
-Filename: "{localappdata}\Rose\Pengu Loader\Pengu Loader.exe"; Parameters: "--uninstall --silent"; Flags: runhidden waituntilterminated skipifdoesntexist
-; Always remove the Rose auto-start scheduled task (created via schtasks /TN "Rose")
-Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN Rose /F"; Flags: runhidden
+Filename: "{localappdata}\Skinforge\Pengu Loader\Pengu Loader.exe"; Parameters: "--uninstall --silent"; Flags: runhidden waituntilterminated skipifdoesntexist
+; Always remove the Skinforge auto-start scheduled task (created via schtasks /TN "Skinforge")
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN Skinforge /F"; Flags: runhidden
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\_internal"
 Type: filesandordirs; Name: "{app}\injection\overlay"
 Type: filesandordirs; Name: "{app}\injection\mods"
 ; Remove user data stored in AppData
-; Rose stores user data in %LOCALAPPDATA%\Rose
-Type: filesandordirs; Name: "{localappdata}\Rose"
+; Skinforge stores user data in %LOCALAPPDATA%\Skinforge
+Type: filesandordirs; Name: "{localappdata}\Skinforge"
 ; Note: State files are now stored in user data directory, not in app directory
 
 [Code]
@@ -104,13 +104,13 @@ end;
 
 function InitializeUninstall(): Boolean;
 var
-  RoseRunning: Boolean;
+  AppRunning: Boolean;
   LeagueRunning: Boolean;
 begin
-  RoseRunning := CheckForMutexes('{#MyAppMutex}');
+  AppRunning := CheckForMutexes('{#MyAppMutex}');
   LeagueRunning := _IsLeagueRunning();
 
-  if RoseRunning and LeagueRunning then
+  if AppRunning and LeagueRunning then
   begin
     MsgBox(
       '{#MyAppName} and League of Legends are both currently running.'#13#10 +
@@ -122,7 +122,7 @@ begin
     exit;
   end;
 
-  if RoseRunning then
+  if AppRunning then
   begin
     MsgBox(
       '{#MyAppName} is currently running.'#13#10 +
@@ -190,7 +190,7 @@ begin
       { Remove legacy/broken startup entries that invoke rundll32 on Pengu Loader core.dll.
         This is what produces the RunDLL "module not found" dialog after uninstall. }
       if (_ContainsTextLower(ValLower, 'rundll32') and _ContainsTextLower(ValLower, 'pengu loader\core.dll')) or
-         _ContainsTextLower(ValLower, '\rose\_internal\pengu loader\core.dll') then
+         _ContainsTextLower(ValLower, '\skinforge\_internal\pengu loader\core.dll') then
       begin
         RegDeleteValue(RootKey, SubKey, Names[I]);
       end;
@@ -219,10 +219,10 @@ begin
   _DeleteStartupValuesIfMatch(HKLM, RunOnce6432);
 end;
 
-procedure _DeleteLocalAppDataRose();
+procedure _DeleteLocalAppDataSkinforge();
 begin
   { Ensure user data is removed before running external cleanup }
-  DelTree(ExpandConstant('{localappdata}\Rose'), True, True, True);
+  DelTree(ExpandConstant('{localappdata}\Skinforge'), True, True, True);
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
@@ -234,8 +234,8 @@ begin
 
   if CurUninstallStep = usPostUninstall then
   begin
-    _DeleteLocalAppDataRose();
-    { Remove the entire install directory (Program Files\Rose) in case
+    _DeleteLocalAppDataSkinforge();
+    { Remove the entire install directory (Program Files\Skinforge) in case
       runtime-generated files (logs, caches, etc.) were left behind. }
     DelTree(ExpandConstant('{app}'), True, True, True);
   end;
