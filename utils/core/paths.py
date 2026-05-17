@@ -165,7 +165,7 @@ def get_user_data_dir() -> Path:
                 # User mismatch detected! Use the desktop user's AppData
                 desktop_localappdata = _get_localappdata_for_user(desktop_profile)
                 if desktop_localappdata:
-                    _cached_user_data_dir = desktop_localappdata / "Rose"
+                    _cached_user_data_dir = desktop_localappdata / "Skinforge"
                     # Ensure the directory exists with proper permissions
                     try:
                         _cached_user_data_dir.mkdir(parents=True, exist_ok=True)
@@ -176,13 +176,13 @@ def get_user_data_dir() -> Path:
         # No mismatch or detection failed - use current user's LOCALAPPDATA
         localappdata = os.environ.get("LOCALAPPDATA")
         if localappdata:
-            _cached_user_data_dir = Path(localappdata) / "Rose"
+            _cached_user_data_dir = Path(localappdata) / "Skinforge"
             return _cached_user_data_dir
 
         # Fallback to user profile
         userprofile = os.environ.get("USERPROFILE")
         if userprofile:
-            _cached_user_data_dir = Path(userprofile) / "AppData" / "Local" / "Rose"
+            _cached_user_data_dir = Path(userprofile) / "AppData" / "Local" / "Skinforge"
             return _cached_user_data_dir
 
         # Last resort: current directory
@@ -193,9 +193,9 @@ def get_user_data_dir() -> Path:
         # Use XDG_DATA_HOME or fallback to ~/.local/share
         xdg_data_home = os.environ.get("XDG_DATA_HOME")
         if xdg_data_home:
-            _cached_user_data_dir = Path(xdg_data_home) / "Rose"
+            _cached_user_data_dir = Path(xdg_data_home) / "Skinforge"
         else:
-            _cached_user_data_dir = Path.home() / ".local" / "share" / "Rose"
+            _cached_user_data_dir = Path.home() / ".local" / "share" / "Skinforge"
         return _cached_user_data_dir
 
 
