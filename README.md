@@ -1,8 +1,8 @@
-# Skill Forge - Effortless Skin Changer for LoL
+# Skinforge - Effortless Skin Changer for LoL
 
 <div align="center">
 
-  <img src="./assets/icon.png" alt="Skill Forge Icon" width="128" height="128">
+  <img src="./assets/icon.png" alt="Skinforge Icon" width="128" height="128">
 
 [![Installer](https://img.shields.io/badge/Installer-Windows-32A832)](https://github.com/hosnye/skinforge/releases/latest) [![Ko-Fi](https://img.shields.io/badge/KoFi-Donate-C03030?logo=ko-fi&logoColor=white)](https://ko-fi.com/skinforge) [![License](https://img.shields.io/badge/License-MIT-C03030)](LICENSE) [![Downloads](https://img.shields.io/github/downloads/hosnye/skinforge/total?color=32A832&label=Downloads)](https://github.com/hosnye/skinforge/releases/latest)
 
@@ -12,11 +12,11 @@
 
 ## Overview
 
-Skill Forge is an open-source automatic skin changer for League of Legends that gives seamless access to every skin in the game. The application runs silently in the system tray, detects skin selections during champion select, and injects the chosen skin when the game loads.
+Skinforge is an open-source automatic skin changer for League of Legends that gives seamless access to every skin in the game. The application runs silently in the system tray, detects skin selections during champion select, and injects the chosen skin when the game loads.
 
-Built on the [Pengu Loader](https://github.com/PenguLoader/PenguLoader) framework, Skill Forge layers JavaScript plugins into the League Client to enable modular UI interactions. It strictly modifies local rendering variables to display custom models and textures - it does **not** manipulate network data, memory states, or gameplay mechanics, so it **offers zero competitive advantage**.
+Built on the [Pengu Loader](https://github.com/PenguLoader/PenguLoader) framework, Skinforge layers JavaScript plugins into the League Client to enable modular UI interactions. It strictly modifies local rendering variables to display custom models and textures - it does **not** manipulate network data, memory states, or gameplay mechanics, so it **offers zero competitive advantage**.
 
-## What makes Skill Forge different
+## What makes Skinforge different
 
 - **In-lobby auto-accept** - a native-looking toggle in the lobby header pops your ready-checks automatically (2-second delay, phase re-verification, Bocchi-style behavior)
 - **Standalone branding & data dir** - own executable, own `%LOCALAPPDATA%` directory, separate Windows AppId - installs cleanly alongside other skin-changer tools
@@ -52,10 +52,10 @@ Built on the [Pengu Loader](https://github.com/PenguLoader/PenguLoader) framewor
 
 ## How It Works
 
-1. **Activation**: Skill Forge starts Pengu Loader on launch, which injects the JS plugins into the League Client
+1. **Activation**: Skinforge starts Pengu Loader on launch, which injects the JS plugins into the League Client
 2. **Skin Detection**: when you hover a skin in champion select, `ROSE-SkinMonitor` reports it to the Python backend
 3. **Game Open Delay**: League's game process is briefly suspended to give injection time to complete
-4. **Injection**: Skill Forge decrypts and injects the selected skin when the game starts
+4. **Injection**: Skinforge decrypts and injects the selected skin when the game starts
 5. **Seamless Experience**: the skin loads as if owned - chromas supported, no gameplay impact
 
 ## Features
@@ -74,21 +74,21 @@ Built on the [Pengu Loader](https://github.com/PenguLoader/PenguLoader) framewor
 
 ### DLL Requirement
 
-Due to DMCA restrictions, Skill Forge cannot distribute the injection DLL file. You must obtain this file yourself from an authorized source and sign it with your own code-signing certificate.
+Due to DMCA restrictions, Skinforge cannot distribute the injection DLL file. You must obtain this file yourself from an authorized source and sign it with your own code-signing certificate.
 
-On first launch, Skill Forge will prompt you to provide this file and open the folder where it should be placed.
+On first launch, Skinforge will prompt you to provide this file and open the folder where it should be placed.
 
 ## Installation
 
 1. Download the latest installer from [Releases](https://github.com/hosnye/skinforge/releases/latest)
 2. Run the installer as Administrator
-3. Launch Skill Forge from the Start Menu or desktop shortcut
+3. Launch Skinforge from the Start Menu or desktop shortcut
 
-The installer registers Skill Forge under its own Windows AppId and user-data directory - it does not touch any other skin-changer installation you may already have.
+The installer registers Skinforge under its own Windows AppId and user-data directory - it does not touch any other skin-changer installation you may already have.
 
 ## Auto-Update
 
-Skill Forge polls this repository's latest GitHub release on startup. When a newer `vX.Y.Z` tag is published with a `.zip` asset, the app downloads and replaces itself before the next launch. Skin data updates happen on a separate channel and continue to flow in independently.
+Skinforge polls this repository's latest GitHub release on startup. When a newer `vX.Y.Z` tag is published with a `.zip` asset, the app downloads and replaces itself before the next launch. Skin data updates happen on a separate channel and continue to flow in independently.
 
 ## Contributing
 
@@ -102,7 +102,7 @@ Custom skins are allowed under Riot's terms of service and are not detected. Do 
 
 ## Support
 
-If you enjoy Skill Forge and want to support development:
+If you enjoy Skinforge and want to support development:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/skinforge)
 
@@ -116,4 +116,4 @@ Built on the shoulders of:
 
 ---
 
-**Skill Forge** - _League, unlocked._
+**Skinforge** - _League, unlocked._
