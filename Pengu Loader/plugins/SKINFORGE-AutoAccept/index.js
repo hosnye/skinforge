@@ -5,12 +5,13 @@
   const STORE_KEY = 'skinforge-auto-accept'
   const POLL_MS = 1000
   const ACCEPT_DELAY_MS = 2000
+  const WRAP_ID = 'sf-auto-accept-wrap'
 
   // ── State ──────────────────────────────────────────────────────────────────
   let enabled = false
+  let currentPhase = null
   let pollInterval = null
   let acceptTimeout = null
-  let injectObserver = null
 
   // ── Persistence ────────────────────────────────────────────────────────────
   async function loadSetting() {
@@ -30,56 +31,44 @@
     try { localStorage.setItem(STORE_KEY, String(val)) } catch (_) {}
   }
 
-  // ── LCU gameflow phase helper ──────────────────────────────────────────────
+  // ── LCU gameflow phase ─────────────────────────────────────────────────────
   async function getGameflowPhase() {
     try {
       const res = await fetch('/lol-gameflow/v1/gameflow-phase')
       if (!res.ok) return null
       const text = await res.text()
-      // Response is a JSON string e.g. "\"ReadyCheck\""
       return text.replace(/"/g, '').trim()
     } catch (_) {
       return null
     }
   }
 
-  // ── Detection & accept (mirrors Bocchi's GameflowMonitor.handleReadyCheck) ─
+  // ── Auto-accept (mirrors Bocchi's GameflowMonitor.handleReadyCheck) ────────
   function startPoll() {
     if (pollInterval) return
-    pollInterval = setInterval(checkPhase, POLL_MS)
+    pollInterval = setInterval(tick, POLL_MS)
   }
 
-  function stopPoll() {
-    if (!pollInterval) return
-    clearInterval(pollInterval)
-    pollInterval = null
-  }
-
-  async function checkPhase() {
-    if (!enabled) return
+  async function tick() {
     const phase = await getGameflowPhase()
+    if (phase !== currentPhase) {
+      currentPhase = phase
+      updateOverlayVisibility()
+    }
+
+    if (!enabled) return
     if (phase !== 'ReadyCheck') return
-
-    // Phase is ReadyCheck — stop polling to prevent double-trigger
-    stopPoll()
-
-    // Clear any existing countdown
-    if (acceptTimeout) { clearTimeout(acceptTimeout); acceptTimeout = null }
+    if (acceptTimeout) return  // already scheduled
 
     acceptTimeout = setTimeout(async () => {
       acceptTimeout = null
 
-      if (!enabled) {
-        // User disabled during countdown — skip accept
-        startPoll()
-        return
-      }
+      if (!enabled) return
 
       // Re-verify phase before accepting (matches Bocchi exactly)
-      const currentPhase = await getGameflowPhase()
-      if (currentPhase !== 'ReadyCheck') {
+      const verifyPhase = await getGameflowPhase()
+      if (verifyPhase !== 'ReadyCheck') {
         console.log(LOG, 'phase changed during delay — skipping accept')
-        startPoll()
         return
       }
 
@@ -89,116 +78,113 @@
       } catch (e) {
         console.warn(LOG, 'accept failed', e)
       }
-
-      // Resume polling for the next queue
-      startPoll()
     }, ACCEPT_DELAY_MS)
   }
 
-  // ── Checkbox UI injection ──────────────────────────────────────────────────
-  function buildCheckbox() {
+  // ── Overlay (visible only during Lobby phase) ──────────────────────────────
+  function ensureStyles() {
+    if (document.getElementById('sf-aa-styles')) return
+    const style = document.createElement('style')
+    style.id = 'sf-aa-styles'
+    style.textContent = `
+      #${WRAP_ID} {
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 16px;
+        background: rgba(1, 10, 19, 0.92);
+        border: 1px solid #785a28;
+        border-radius: 3px;
+        cursor: pointer;
+        user-select: none;
+        z-index: 2147483646;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+        transition: opacity 120ms ease, transform 120ms ease;
+      }
+      #${WRAP_ID}:hover {
+        background: rgba(40, 30, 12, 0.95);
+      }
+      #${WRAP_ID} .sf-box {
+        width: 16px;
+        height: 16px;
+        border: 1px solid #c8aa6e;
+        background: #010a13;
+        position: relative;
+        flex-shrink: 0;
+      }
+      #${WRAP_ID}.on .sf-box::after {
+        content: '';
+        position: absolute;
+        inset: 2px;
+        background: #c8aa6e;
+      }
+      #${WRAP_ID} .sf-label {
+        font-family: "Beaufort for LOL", "LoL Display", serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #cdbe91;
+      }
+      #${WRAP_ID}.on .sf-label {
+        color: #f0e6d2;
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  function buildOverlay() {
     const wrap = document.createElement('div')
-    wrap.id = 'sf-auto-accept-wrap'
-    wrap.style.cssText = [
-      'display:flex',
-      'align-items:center',
-      'gap:8px',
-      'padding:6px 12px 6px 8px',
-      'cursor:pointer',
-      'user-select:none',
-    ].join(';')
+    wrap.id = WRAP_ID
+    if (enabled) wrap.classList.add('on')
 
-    const cb = document.createElement('lol-uikit-flat-checkbox')
-    if (enabled) cb.setAttribute('class', 'checked')
-
-    const input = document.createElement('input')
-    input.slot = 'input'
-    input.type = 'checkbox'
-    input.checked = enabled
-    cb.appendChild(input)
+    const box = document.createElement('div')
+    box.className = 'sf-box'
 
     const label = document.createElement('span')
+    label.className = 'sf-label'
     label.textContent = 'Auto Accept'
-    label.style.cssText = [
-      'font-family:"Beaufort for LOL","LoL Display",serif',
-      'font-size:11px',
-      'font-weight:700',
-      'letter-spacing:0.08em',
-      'text-transform:uppercase',
-      'color:#cdbe91',
-    ].join(';')
 
-    wrap.appendChild(cb)
+    wrap.appendChild(box)
     wrap.appendChild(label)
 
     wrap.addEventListener('click', () => {
       enabled = !enabled
-      input.checked = enabled
-      if (enabled) {
-        cb.setAttribute('class', 'checked')
-        startPoll()
-      } else {
-        cb.removeAttribute('class')
-        if (acceptTimeout) { clearTimeout(acceptTimeout); acceptTimeout = null }
-        stopPoll()
-      }
+      wrap.classList.toggle('on', enabled)
       saveSetting(enabled)
+      if (!enabled && acceptTimeout) {
+        clearTimeout(acceptTimeout)
+        acceptTimeout = null
+      }
       console.log(LOG, 'toggled →', enabled)
     })
 
     return wrap
   }
 
-  function findAnchor() {
-    const social = document.querySelector('lol-social-lower-pane-component')
-    if (social) return { parent: social.parentElement, before: social }
+  function updateOverlayVisibility() {
+    const existing = document.getElementById(WRAP_ID)
+    const shouldShow = currentPhase === 'Lobby'
 
-    const stats = document.querySelector('.lobby-stats-profile')
-    if (stats) return { parent: stats.parentElement, before: stats }
-
-    const cta = document.querySelector('lol-lobby-team-builder-cta-component')
-    if (cta) return { parent: cta, before: cta.firstElementChild }
-
-    return null
-  }
-
-  function tryInject() {
-    if (document.getElementById('sf-auto-accept-wrap')) return true
-    const anchor = findAnchor()
-    if (!anchor || !anchor.parent) return false
-    anchor.parent.insertBefore(buildCheckbox(), anchor.before)
-    console.log(LOG, 'checkbox injected')
-    return true
-  }
-
-  // ── MutationObserver ───────────────────────────────────────────────────────
-  function startObserver() {
-    if (injectObserver) return
-    injectObserver = new MutationObserver(() => {
-      const inLobby = !!(
-        document.querySelector('lol-social-lower-pane-component') ||
-        document.querySelector('.lobby-stats-profile') ||
-        document.querySelector('lol-lobby-team-builder-cta-component')
-      )
-      if (inLobby) {
-        tryInject()
-      } else {
-        const stale = document.getElementById('sf-auto-accept-wrap')
-        if (stale) stale.remove()
-      }
-    })
-    injectObserver.observe(document.body, { childList: true, subtree: true })
+    if (shouldShow && !existing) {
+      ensureStyles()
+      document.body.appendChild(buildOverlay())
+      console.log(LOG, 'overlay shown (phase=Lobby)')
+    } else if (!shouldShow && existing) {
+      existing.remove()
+      console.log(LOG, 'overlay hidden (phase=' + currentPhase + ')')
+    }
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
     enabled = await loadSetting()
     console.log(LOG, `init — auto-accept ${enabled ? 'ON' : 'OFF'}`)
-
-    startObserver()
-    setInterval(tryInject, 5000)
-
-    if (enabled) startPoll()
+    startPoll()
   }
 
   if (document.readyState === 'loading') {
