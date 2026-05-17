@@ -80,21 +80,24 @@
     const style = document.createElement('style')
     style.id = 'sf-aa-styles'
     style.textContent = `
+      .lobby-banner.local { position: relative !important; }
       #${WRAP_ID} {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        margin: 0 auto 12px;
-        padding: 6px 16px;
-        width: fit-content;
-        background: rgba(1, 10, 19, 0.78);
+        gap: 8px;
+        padding: 4px 12px;
+        white-space: nowrap;
+        background: rgba(1, 10, 19, 0.85);
         border: 1px solid #463714;
         border-radius: 2px;
         cursor: pointer;
         user-select: none;
-        position: relative;
-        z-index: 50;
+        z-index: 100;
         transition: background-color 120ms ease, border-color 120ms ease;
       }
       #${WRAP_ID}:hover {
